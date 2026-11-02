@@ -10,6 +10,14 @@
 	"compatibility_flags": [
 		"python_workers"
 	],
+	"secrets": {
+		"required": [
+			"DISCORD_CLIENT_ID",
+			"DISCORD_CLIENT_SECRET",
+			"FLASK_SECRET_KEY",
+			"DISCORD_ADMIN_ID_0"
+		]
+	},
 	"assets": {
 		"directory": "./public/",
 		"binding": "ASSETS",

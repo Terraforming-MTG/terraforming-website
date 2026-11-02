@@ -135,6 +135,125 @@ main h2 { font-size: 1.5rem; margin-top: 2.2em; }
     outline-offset: 3px;
 }
 
+.form-field {
+    display: grid;
+    gap: 8px;
+}
+
+.form-field label {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.card-admin-form {
+    display: grid;
+    gap: 20px;
+    max-width: 760px;
+}
+
+.card-admin-form .list-select {
+    margin-bottom: 0;
+}
+
+.search-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.search-controls input,
+.form-field textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--land);
+    border-radius: 8px;
+    background: #263a32;
+    color: var(--text);
+    font: inherit;
+}
+
+.form-field textarea {
+    resize: vertical;
+}
+
+.search-controls input:focus-visible,
+.form-field textarea:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+}
+
+.search-controls button,
+#add-button {
+    padding: 10px 16px;
+    border: 1px solid var(--spell);
+    border-radius: 8px;
+    background: var(--spell);
+    color: #1d2b26;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.search-controls button:disabled,
+#add-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.card-search-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 12px;
+}
+
+.card-search-result {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid var(--land);
+    border-radius: 8px;
+    background: #263a32;
+    color: var(--text);
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+}
+
+.card-search-result:hover,
+.card-search-result[aria-pressed="true"] {
+    border-color: var(--spell);
+}
+
+.card-search-result:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.card-search-result img {
+    width: 48px;
+    height: 68px;
+    flex: 0 0 auto;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.card-result-details {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.card-result-details span {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.form-status {
+    margin: 0;
+}
+
 main p, main ul, main ol {
     max-width: 68ch;
     margin: 0 0 1.1em;
@@ -150,6 +269,45 @@ main p, main ul, main ol {
 
 #banlist li {
     margin: 0;
+}
+
+#banlist .list-card {
+    position: relative;
+}
+
+#banlist .remove-card-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid rgba(232, 236, 223, 0.8);
+    border-radius: 50%;
+    background: rgba(29, 43, 38, 0.9);
+    color: var(--text);
+    font: inherit;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 120ms ease, background-color 120ms ease;
+}
+
+#banlist .list-card:hover .remove-card-button,
+#banlist .list-card:focus-within .remove-card-button {
+    opacity: 1;
+}
+
+#banlist .remove-card-button:hover {
+    background: #8f302b;
+}
+
+#banlist .remove-card-button:disabled {
+    cursor: wait;
+    opacity: 0.6;
 }
 
 #banlist img {
@@ -176,6 +334,10 @@ li {
 
 @media (max-width: 700px) {
     .menu-btn { display: block; }
+
+    .search-controls {
+        flex-direction: column;
+    }
 
     .links {
         display: none;

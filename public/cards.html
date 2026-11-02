@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
     <title>Terraforming</title>
 </head>
-<body>
+<body data-is-admin="{{ 'true' if is_admin else 'false' }}">
     <header class="nav">
         <div class="nav-inner">
             <a class="brand" href="/">Terraforming</a>
@@ -28,6 +28,9 @@
     </header>
     <main>
         <h1>Card Lists</h1>
+        {% if is_admin %}
+            <a href="/add_card">Add a card</a>
+        {% endif %}
         <div class="list-select">
             <select name="list" id="list" disabled>
                 <option value="">Loading lists...</option>
@@ -37,6 +40,7 @@
         <p id="banlist-error" role="alert" hidden></p>
     </main>
     <script>
+        const isAdmin = document.body.dataset.isAdmin === 'true';
         const btn = document.getElementById('menu-btn');
         const links = document.getElementById('nav-links');
         btn.addEventListener('click', () => {
@@ -91,6 +95,7 @@
                     const imageUrl = cardDetails?.image_uri;
 
                     const item = document.createElement('li');
+                    item.className = 'list-card';
                     if (imageUrl && cardDetails.scryfall_uri) {
                         const anchor = document.createElement('a');
                         anchor.href = cardDetails.scryfall_uri;
@@ -106,10 +111,58 @@
                     } else {
                         item.textContent = cardName;
                     }
+
+                    if (isAdmin) {
+                        const removeButton = document.createElement('button');
+                        removeButton.type = 'button';
+                        removeButton.className = 'remove-card-button';
+                        removeButton.textContent = '×';
+                        removeButton.setAttribute(
+                            'aria-label',
+                            `Remove ${cardName} from ${selectedList.name}`
+                        );
+                        removeButton.title = `Remove ${cardName} from this list`;
+                        removeButton.addEventListener('click', () =>
+                            removeCardFromList(
+                                card.oracle_id,
+                                cardName,
+                                listSlug,
+                                item,
+                                removeButton
+                            )
+                        );
+                        item.appendChild(removeButton);
+                    }
+
                     list.appendChild(item);
                 }
             } catch (err) {
                 error.textContent = `Could not load the ${listSlug} list.`;
+                error.hidden = false;
+                console.error(err);
+            }
+        }
+
+        async function removeCardFromList(oracleId, cardName, listSlug, item, button) {
+            if (!window.confirm(`Remove ${cardName} from this list?`)) return;
+
+            const error = document.getElementById('banlist-error');
+            button.disabled = true;
+            error.hidden = true;
+            try {
+                const response = await fetch(
+                    `/api/lists/${encodeURIComponent(listSlug)}/${encodeURIComponent(oracleId)}/`,
+                    { method: 'DELETE' }
+                );
+                if (!response.ok) {
+                    const result = await response.json();
+                    throw new Error(result.error || `Remove request failed (${response.status})`);
+                }
+
+                item.remove();
+            } catch (err) {
+                button.disabled = false;
+                error.textContent = `Could not remove ${cardName} from the list.`;
                 error.hidden = false;
                 console.error(err);
             }

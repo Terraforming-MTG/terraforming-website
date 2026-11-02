@@ -7,7 +7,9 @@ requires-python = ">=3.12"
 dependencies = [
     "flask",
     "sqlalchemy",
-    "sqlalchemy-cloudflare-d1"
+    "sqlalchemy-cloudflare-d1",
+    "authlib",
+    "requests"
 ]
 
 [dependency-groups]

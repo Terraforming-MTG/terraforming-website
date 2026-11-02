@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="//cdn.jsdelivr.net/npm/mana-font@latest/css/mana.css" rel="stylesheet" type="text/css" /> 
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+    <title>Add a card | Terraforming</title>
+</head>
+<body>
+    <header class="nav">
+        <div class="nav-inner">
+            <a class="brand" href="/">Terraforming</a>
+        
+            <button class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="nav-links">Menu</button>
+        
+            <nav aria-label="Main">
+            <ul class="links" id="nav-links">
+                <li><a href="/">About</a></li>
+                <li><a href="/rules">Rules</a></li>
+                <li><a href="/cards" aria-current="page">Cards</a></li>
+            </ul>
+            </nav>
+        </div>
+        <div class="deck-bar" id="deck-bar" aria-hidden="true"></div>
+    </header>
+    <main>
+        <p><a href="/cards">Back to card lists</a></p>
+        <h1>Add a card</h1>
+        <p>Search Scryfall, select a card, and choose the list to add it to.</p>
+
+        <div class="card-admin-form">
+            <div class="form-field list-select">
+                <label for="list-select">List</label>
+                <select id="list-select" disabled>
+                    <option value="">Loading lists...</option>
+                </select>
+            </div>
+
+            <form id="search-form" class="form-field">
+                <label for="card-query">Search Scryfall</label>
+                <div class="search-controls">
+                    <input id="card-query" name="q" type="search" required
+                           maxlength="100" placeholder="Card name or Scryfall query">
+                    <button type="submit" id="search-button">Search</button>
+                </div>
+            </form>
+
+            <p id="search-status" class="form-status" role="status" aria-live="polite"></p>
+            <div id="search-results" class="card-search-results" aria-label="Search results"></div>
+
+            <div class="form-field">
+                <label for="card-reason">Reason (optional)</label>
+                <textarea id="card-reason" rows="3" maxlength="2000"
+                          placeholder="Why is this card on the list?"></textarea>
+            </div>
+            <button type="button" id="add-button" disabled>Add selected card</button>
+            <p id="add-status" class="form-status" role="status" aria-live="polite"></p>
+        </div>
+    </main>
+    <script>
+        const btn = document.getElementById('menu-btn');
+        const links = document.getElementById('nav-links');
+        btn.addEventListener('click', () => {
+            const open = links.classList.toggle('open');
+            btn.setAttribute('aria-expanded', open);
+        });
+
+        (function () {
+        const bar = document.getElementById('deck-bar');
+        const spell = Math.floor(Math.random() * 60);
+        for (let i = 0; i < 60; i++) {
+            const seg = document.createElement('span');
+            if (i === spell) seg.className = 'spell';
+            bar.appendChild(seg);
+        }
+        })();
+
+        const listSelect = document.getElementById('list-select');
+        const searchForm = document.getElementById('search-form');
+        const searchInput = document.getElementById('card-query');
+        const searchButton = document.getElementById('search-button');
+        const searchStatus = document.getElementById('search-status');
+        const searchResults = document.getElementById('search-results');
+        const reasonInput = document.getElementById('card-reason');
+        const addButton = document.getElementById('add-button');
+        const addStatus = document.getElementById('add-status');
+        let selectedCard = null;
+
+        function updateAddButton() {
+            addButton.disabled = !selectedCard || !listSelect.value;
+        }
+
+        function selectCard(card, button) {
+            searchResults.querySelectorAll('.card-search-result').forEach(result => {
+                result.setAttribute('aria-pressed', String(result === button));
+            });
+            selectedCard = card;
+            addStatus.textContent = '';
+            updateAddButton();
+        }
+
+        function createCardResult(card) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'card-search-result';
+            button.setAttribute('aria-pressed', 'false');
+            button.disabled = !card.oracle_id;
+            button.addEventListener('click', () => selectCard(card, button));
+
+            const imageUri = card.image_uris?.small
+                ?? card.card_faces?.[0]?.image_uris?.small;
+            if (imageUri) {
+                const image = document.createElement('img');
+                image.src = imageUri;
+                image.alt = '';
+                image.loading = 'lazy';
+                button.appendChild(image);
+            }
+
+            const details = document.createElement('span');
+            details.className = 'card-result-details';
+            const name = document.createElement('strong');
+            name.textContent = card.name;
+            details.appendChild(name);
+
+            const printing = document.createElement('span');
+            printing.textContent = `${card.set_name} · ${card.collector_number}`;
+            details.appendChild(printing);
+            button.appendChild(details);
+
+            return button;
+        }
+
+        async function loadLists() {
+            try {
+                const response = await fetch('/api/lists/');
+                if (!response.ok) {
+                    throw new Error(`List request failed (${response.status})`);
+                }
+
+                const lists = await response.json();
+                listSelect.replaceChildren();
+                for (const list of lists) {
+                    const option = document.createElement('option');
+                    option.value = list.slug;
+                    option.textContent = list.name;
+                    listSelect.appendChild(option);
+                }
+
+                if (!lists.length) {
+                    listSelect.add(new Option('No lists available', ''));
+                    searchStatus.textContent = 'There are no lists to add cards to.';
+                    return;
+                }
+
+                listSelect.disabled = false;
+                updateAddButton();
+            } catch (error) {
+                listSelect.replaceChildren(new Option('Could not load lists', ''));
+                searchStatus.textContent = 'Could not load card lists. Please try again.';
+                console.error(error);
+            }
+        }
+
+        searchForm.addEventListener('submit', async event => {
+            event.preventDefault();
+            const query = searchInput.value.trim();
+            if (!query) return;
+
+            selectedCard = null;
+            updateAddButton();
+            addStatus.textContent = '';
+            searchResults.replaceChildren();
+            searchButton.disabled = true;
+            searchStatus.textContent = 'Searching Scryfall...';
+
+            try {
+                const url = new URL('https://api.scryfall.com/cards/search');
+                url.searchParams.set('q', query);
+                url.searchParams.set('unique', 'cards');
+                url.searchParams.set('order', 'name');
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        searchStatus.textContent = 'No matching cards found.';
+                        return;
+                    }
+                    throw new Error(result.details || `Scryfall request failed (${response.status})`);
+                }
+
+                const cards = result.data ?? [];
+                if (!cards.length) {
+                    searchStatus.textContent = 'No matching cards found.';
+                    return;
+                }
+
+                const visibleCards = cards.slice(0, 30);
+                for (const card of visibleCards) {
+                    searchResults.appendChild(createCardResult(card));
+                }
+                const moreResults = result.total_cards > visibleCards.length
+                    ? ` Showing the first ${visibleCards.length}.`
+                    : '';
+                searchStatus.textContent = `${result.total_cards} result${result.total_cards === 1 ? '' : 's'}.${moreResults} Select a card to add.`;
+            } catch (error) {
+                searchStatus.textContent = 'Could not search Scryfall. Please try again.';
+                console.error(error);
+            } finally {
+                searchButton.disabled = false;
+            }
+        });
+
+        addButton.addEventListener('click', async () => {
+            if (!selectedCard || !listSelect.value) return;
+
+            addButton.disabled = true;
+            addStatus.textContent = 'Adding card...';
+            try {
+                const response = await fetch(
+                    `/api/lists/${encodeURIComponent(listSelect.value)}/`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            oracle_id: selectedCard.oracle_id,
+                            reason: reasonInput.value.trim() || null,
+                        }),
+                    }
+                );
+                const result = await response.json();
+
+                if (response.status === 409) {
+                    addStatus.textContent = 'That card is already on this list.';
+                    return;
+                }
+                if (!response.ok) {
+                    throw new Error(result.error || `Add request failed (${response.status})`);
+                }
+
+                addStatus.textContent = `${selectedCard.name} was added to ${listSelect.options[listSelect.selectedIndex].text}.`;
+                selectedCard = null;
+                reasonInput.value = '';
+            } catch (error) {
+                addStatus.textContent = 'Could not add the card. Please try again.';
+                console.error(error);
+            } finally {
+                updateAddButton();
+            }
+        });
+
+        listSelect.addEventListener('change', updateAddButton);
+        loadLists();
+    </script>
+</body>
+</html>

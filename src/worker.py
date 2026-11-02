@@ -2,11 +2,13 @@ import json
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from flask import Flask, jsonify, Response, request
+from functools import wraps
+from flask import Flask, jsonify, Response, redirect, request, url_for, session
 from werkzeug.exceptions import BadRequest
-from workers import wsgi
+from workers import env, wsgi
 from js import Object, Promise, fetch, setTimeout # type: ignore
 from pyodide.ffi import run_sync, to_js
+from authlib.integrations.flask_client import OAuth
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -16,6 +18,34 @@ from sqlalchemy_cloudflare_d1 import create_engine_from_binding
 from database import Card, FormatList, FormatListCard, ScryfallCardCache
 
 app = Flask(__name__)
+app.secret_key = env.FLASK_SECRET_KEY
+
+oauth = OAuth(app)
+
+def get_discord_client():
+    env = request.environ["workers.env"]
+
+    client = oauth.create_client("discord")
+    if client is None:
+        client = oauth.register(
+            name="discord",
+            client_id=env.DISCORD_CLIENT_ID,
+            client_secret=env.DISCORD_CLIENT_SECRET,
+            access_token_url="https://discord.com/api/oauth2/token",
+            authorize_url="https://discord.com/api/oauth2/authorize",
+            api_base_url="https://discord.com/api/",
+            client_kwargs={"scope": "identify"}
+        )
+    return client
+
+def admin_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        session_user = session.get("user")
+        if not session_user or session_user.get("id") != request.environ["workers.env"].DISCORD_ADMIN_ID_0:
+            return jsonify({"error": "Admin access required"}), 403
+        return f(*args, **kwargs)
+    return wrapper
 
 def serve_asset(path, **template_context):
     assets = request.environ["workers.env"].ASSETS
@@ -41,7 +71,7 @@ def serve_asset(path, **template_context):
 
 @app.route("/")
 def index():
-    return serve_asset("index.html")
+    return serve_asset("index.html", discord_username=session.get("user", {}).get("username"), discord_id=session.get("user", {}).get("id"))
 
 @app.route("/rules")
 def rules():
@@ -49,7 +79,33 @@ def rules():
 
 @app.route("/cards")
 def cards():
-    return serve_asset("cards.html")
+    return serve_asset("cards.html", is_admin=session.get("user", {}).get("id") == request.environ["workers.env"].DISCORD_ADMIN_ID_0)
+
+@app.route("/add_card")
+@admin_required
+def add_card():
+    return serve_asset("add_card.html")
+
+@app.route("/login")
+def login():
+    discord = get_discord_client()
+    return discord.authorize_redirect(url_for("callback", _external=True))
+
+@app.route("/logout")
+def logout():
+    session.pop("user", None)
+    return jsonify({"message": "Logged out"})
+
+@app.route("/callback")
+def callback():
+    discord = get_discord_client()
+    token = discord.authorize_access_token()
+    data = discord.get("users/@me", token=token).json()
+    session["user"] = {
+        "id": data["id"],
+        "username": data["username"]
+    }
+    return redirect(url_for("index"))
 
 # API
 
@@ -263,11 +319,119 @@ def get_scryfall_cards():
 def get_list(slug):
     return get_format_list(slug)
 
+@app.post("/api/lists/<string:slug>/")
+@admin_required
+def add_card_to_list(slug):
+    if not request.is_json:
+        return jsonify({"error": "Content-Type must be application/json"}), 415
+
+    try:
+        payload = request.get_json()
+    except BadRequest:
+        return jsonify({"error": "Request body must contain valid JSON"}), 400
+
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Request body must be a JSON object"}), 400
+
+    allowed_fields = {"oracle_id", "reason"}
+    if unknown_fields := payload.keys() - allowed_fields:
+        return jsonify({
+            "error": f"Unknown field(s): {', '.join(sorted(unknown_fields))}"
+        }), 400
+
+    oracle_id = payload.get("oracle_id")
+    if not isinstance(oracle_id, str) or not oracle_id.strip():
+        return jsonify({
+            "error": "'oracle_id' must be a non-empty string"
+        }), 400
+
+    try:
+        oracle_id = str(UUID(oracle_id.strip()))
+    except ValueError:
+        return jsonify({"error": "'oracle_id' must be a valid UUID"}), 400
+
+    reason = payload.get("reason")
+    if reason is not None and not isinstance(reason, str):
+        return jsonify({
+            "error": "'reason' must be a string or null"
+        }), 400
+
+    env = request.environ["workers.env"]
+    engine = create_engine_from_binding(env.terraforming_db)
+
+    try:
+        with Session(engine) as session:
+            format_list = session.scalar(
+                select(FormatList).where(FormatList.slug == slug)
+            )
+            if format_list is None:
+                return jsonify({"error": f"{slug.title()} not found"}), 404
+
+            if session.get(
+                FormatListCard, (format_list.id, oracle_id)
+            ) is not None:
+                return jsonify({
+                    "error": f"Card is already on the {format_list.name}"
+                }), 409
+
+            card = session.get(Card, oracle_id)
+            if card is None:
+                card = Card(oracle_id=oracle_id)
+                session.add(card)
+
+            session.add(FormatListCard(
+                list_id=format_list.id,
+                oracle_id=oracle_id,
+                reason=reason,
+            ))
+            result = {
+                "oracle_id": card.oracle_id,
+                "reason": reason,
+            }
+            session.commit()
+    except IntegrityError:
+        return jsonify({
+            "error": "The card could not be added because of a conflicting database entry"
+        }), 409
+
+    return jsonify(result), 201
+
+@app.delete("/api/lists/<string:slug>/<string:oracle_id>/")
+@admin_required
+def remove_card_from_list(slug, oracle_id):
+    try:
+        oracle_id = str(UUID(oracle_id.strip()))
+    except ValueError:
+        return jsonify({"error": "Invalid oracle_id"}), 400
+
+    env = request.environ["workers.env"]
+    engine = create_engine_from_binding(env.terraforming_db)
+
+    with Session(engine) as session:
+        format_list = session.scalar(
+            select(FormatList).where(FormatList.slug == slug)
+        )
+        if format_list is None:
+            return jsonify({"error": f"{slug.title()} not found"}), 404
+
+        entry = session.get(FormatListCard, (format_list.id, oracle_id))
+        if entry is None:
+            return jsonify({
+                "error": f"Card is not on the {format_list.name}"
+            }), 404
+
+        session.delete(entry)
+        session.commit()
+
+    return "", 204
+
 @app.get("/api/banlist/")
+@admin_required
 def get_banlist():
     return get_format_list("banlist")
 
 @app.post("/api/banlist/")
+@admin_required
 def add_banlist_card():
     if not request.is_json:
         return jsonify({"error": "Content-Type must be application/json"}), 415
@@ -347,6 +511,7 @@ def add_banlist_card():
     return jsonify(result), 201
 
 @app.delete("/api/banlist/<string:oracle_id>/")
+@admin_required
 def remove_banlist_card(oracle_id):
     oracle_id = oracle_id.strip()
     if not oracle_id or len(oracle_id) > 36:
@@ -376,6 +541,7 @@ def get_restricted():
     return get_format_list("restricted")
 
 @app.post("/api/restricted/")
+@admin_required
 def add_restricted_card():
     if not request.is_json:
         return jsonify({"error": "Content-Type must be application/json"}), 415
@@ -455,6 +621,7 @@ def add_restricted_card():
     return jsonify(result), 201
 
 @app.delete("/api/restricted/<string:oracle_id>/")
+@admin_required
 def remove_restricted_card(oracle_id):
     oracle_id = oracle_id.strip()
     if not oracle_id or len(oracle_id) > 36:
