@@ -1,0 +1,200 @@
+:root {
+    --bg: #1d2b26;
+    --text: #e8ecdf;
+    --muted: #9db0a3;
+    --land: #4d6b58;
+    --spell: #e9b44c;
+    --focus: #e9b44c;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.nav {
+    position: relative;
+    background: var(--bg);
+}
+
+.nav-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 18px 24px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.brand {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.5rem;
+    letter-spacing: 0.01em;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.links {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.95rem;
+    padding: 6px 0;
+    border-bottom: 2px solid transparent;
+}
+
+.links a:hover { color: var(--text); }
+
+.links a[aria-current="page"] {
+    color: var(--text);
+    border-bottom-color: var(--spell);
+}
+
+a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 4px;
+    border-radius: 2px;
+}
+
+/* 59 lands + 1 spell: the bar is 60 segments, the last one is amber */
+.deck-bar {
+    height: 5px;
+    display: grid;
+    grid-template-columns: repeat(60, 1fr);
+    gap: 2px;
+}
+ 
+.deck-bar span { background: var(--land); }
+.deck-bar span.spell { background: var(--spell); }
+
+main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+    line-height: 1.65;
+}
+ 
+main h1, main h2, main h3 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    line-height: 1.2;
+    margin: 0 0 0.6em;
+}
+ 
+main h1 { font-size: 2.25rem; }
+main h2 { font-size: 1.5rem; margin-top: 2.2em; }
+ 
+.list-select {
+    display: grid;
+    gap: 8px;
+    max-width: 320px;
+    margin-bottom: 24px;
+}
+
+.list-select label {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.list-select select {
+    width: 100%;
+    appearance: none;
+    padding: 12px 42px 12px 14px;
+    border: 1px solid var(--land);
+    border-radius: 8px;
+    background-color: #263a32;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23e8ecdf' stroke-width='2'%3E%3Cpath d='m3 6 5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 14px;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.list-select select:disabled {
+    cursor: wait;
+    opacity: 0.7;
+}
+
+.list-select select:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+}
+
+main p, main ul, main ol {
+    max-width: 68ch;
+    margin: 0 0 1.1em;
+}
+
+#banlist {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    max-width: none;
+    padding: 0;
+}
+
+#banlist li {
+    margin: 0;
+}
+
+#banlist img {
+    display: block;
+}
+ 
+main a { color: var(--spell); }
+
+li {
+    list-style: none;
+}
+
+.menu-btn {
+    display: none;
+    background: none;
+    border: 1px solid var(--muted);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.9rem;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+@media (max-width: 700px) {
+    .menu-btn { display: block; }
+
+    .links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        gap: 0;
+        background: var(--bg);
+        padding: 8px 24px 16px;
+        z-index: 10;
+    }
+
+    .links.open { display: flex; }
+
+    .links a {
+        display: block;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(157, 176, 163, 0.2);
+    }
+}

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/css/style.css" rel="stylesheet" type="text/css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="//cdn.jsdelivr.net/npm/mana-font@latest/css/mana.css" rel="stylesheet" type="text/css" /> 
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+    <title>Terraforming</title>
+</head>
+<body>
+    <header class="nav">
+        <div class="nav-inner">
+            <a class="brand" href="/" aria-current="page">Terraforming</a>
+        
+            <button class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="nav-links">Menu</button>
+        
+            <nav aria-label="Main">
+            <ul class="links" id="nav-links">
+                <li><a href="/" aria-current="page">About</a></li>
+                <li><a href="/rules">Rules</a></li>
+                <li><a href="/cards">Cards</a></li>
+            </ul>
+            </nav>
+        </div>
+        <div class="deck-bar" id="deck-bar" aria-hidden="true"></div>
+    </header>
+    <main>
+        <h1>What is Terraforming?</h1>
+        <p>Terraforming is a custom <a href="https://magic.wizards.com/en" target="_blank">Magic: The Gathering</a> format that provides a unique deck-building experience with land-focused gameplay.</p>
+        <p>A terraforming deck must contain at least 60 cards (but it may contain more).<br>
+           A terraforming deck may only contain lands, with the exception of a single card designated the <span style="font-style: italic;">Joker</span>, which can be any card type.<br>
+           After keeping an opening hand, each player searches their library for their <span style="font-style: italic;">Mainland</span> card and puts it into their hand. They then shuffle a card from their hand into their library.<br>
+           Your first land played each game receives an indestructible counter.<br>
+           You may play additional lands by paying an increasing cost starting with <i class="ms ms-cost ms-1"></i> for each land played beyond your first.</p>
+    </main>
+    <script>
+        const btn = document.getElementById('menu-btn');
+        const links = document.getElementById('nav-links');
+        btn.addEventListener('click', () => {
+            const open = links.classList.toggle('open');
+            btn.setAttribute('aria-expanded', open);
+        });
+
+        (function () {
+        const bar = document.getElementById('deck-bar');
+        const spell = Math.floor(Math.random() * 60);
+        for (let i = 0; i < 60; i++) {
+            const seg = document.createElement('span');
+            if (i === spell) seg.className = 'spell';
+            bar.appendChild(seg);
+        }
+        })();
+    </script>
+</body>
+</html>

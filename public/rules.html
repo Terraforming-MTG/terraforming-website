@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/css/style.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="//cdn.jsdelivr.net/npm/mana-font@latest/css/mana.css" rel="stylesheet" type="text/css" /> 
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+    <title>Terraforming</title>
+</head>
+<body>
+    <header class="nav">
+        <div class="nav-inner">
+            <a class="brand" href="/">Terraforming</a>
+        
+            <button class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="nav-links">Menu</button>
+        
+            <nav aria-label="Main">
+            <ul class="links" id="nav-links">
+                <li><a href="/">About</a></li>
+                <li><a href="/rules" aria-current="page">Rules</a></li>
+                <li><a href="/cards">Cards</a></li>
+            </ul>
+            </nav>
+        </div>
+        <div class="deck-bar" id="deck-bar" aria-hidden="true"></div>
+    </header>
+    <main>
+        <section id="general-information">
+            <h2>General Information</h2>
+            <p>Terraforming requires a minimum of 2 players, but it can be played with more.<br>
+               The starting life total in Terraforming is 20.<br>
+               The minimum deck size is 60 cards. There is no maximum deck size.<br>
+               Only lands are allowed, with the exception of a single card, known as the <span style="font-style: italic;">Joker</span>.</p>
+        </section>
+        <section id="deck-constraints">
+            <h2>Deck Constraints</h2>
+            <p>The minimum deck size for a Terraforming deck is 60 cards. A Terraforming deck may not contain more than 4 copies of a card. The only exceptions to this rule are basic lands. You may have any amount of basic lands in your deck.<br>
+               A Terraforming deck may not contain more than one copy of a restricted card.<br>
+               A Terraforming deck may only contain land cards, with the exception of a singular non-land card designated the <span style="font-style: italic;">Joker</span>.<br>
+               A Terraforming deck contains a card known as the <span style="font-style: italic;">Mainland</span>.<br>
+               Two-sided cards that are lands on one side are allowed to be played in a Terraforming deck without taking up the <span style="font-style: italic;">Joker</span> spot.<br>
+               All un-set cards are legal unless stated otherwise.</p>
+        </section>
+        <section id="joker">
+            <h2>The Joker</h2>
+            <p>The <span style="font-style: italic;">Joker</span> is a card of any type in a Terraforming deck.<br>
+               All cards in a Terraforming deck must be a land, excluding the <span style="font-style: italic;">Joker</span>.<br>
+               The <span style="font-style: italic;">Joker</span> may be a land card.<br>
+               The Joker can be from an un-set and it can be restricted.</p>
+        </section>
+        <section id="mainland">
+            <h2>Mainland</h2>
+            <p>At the beginning of the game, you designate one land card in your library as your <span style="font-style: italic;">Mainland</span>. There may only be one copy of the card you choose as your <span style="font-style: italic;">Mainland</span>.<br>
+               After a hand has been kept, you search your library for your mainland and put it into your hand. You then shuffle a differnt card from your hand into your library.<br>
+               If the <span style="font-style: italic;">Mainland</span> card is in your hand after when you keep your hand, skip this step.</p>
+        </section>
+        <section id="gameplay-rules">
+            <h2>Gameplay Rules</h2>
+            <p>If a rule is not stated within this page, follow the rules of standard-edition Magic: The Gathering.<br><br>
+               Players may play additional lands each turn. For each land a player would play after their first, they must pay an additional mana cost correlating to the amount of lands they have played this turn.<br>
+                <table style="text-align: left;">
+                    <tr>
+                        <th style="padding-right: 50px;">Land played</th>
+                        <th>Additional mana cost</th>
+                    </tr>
+                    <tr>
+                        <th>First</th>
+                        <th><i class="ms ms-cost ms-0"></i></th>
+                    </tr>
+                    <tr>
+                        <th>Second</th>
+                        <th><i class="ms ms-cost ms-1"></i></th>
+                    </tr>
+                    <tr>
+                        <th>Third</th>
+                        <th><i class="ms ms-cost ms-2"></i></th>
+                    </tr>
+                    <tr><th>Etc...</th></tr>
+                </table><br>
+               Lands put onto the battlefield through card effects like <a href="https://scryfall.com/card/trc/527/evolving-wilds" target="_blank">Evolving Wilds</a> do not count toward the additional land count and do not require the additional mana cost to be payed.<br><br>
+               The first land a player plays in a game enters with an indestructible counter. As long as the indestructible counter is on that land, effects that say <span style="font-style: italic;">destroy</span> don't affect it.</p>
+        </section>
+        <section id="banned-restricted">
+            <h2>Banned and Restricted cards</h2>
+            <p>Cards included on the Terraforming banlist cannot be included in a Terraforming deck.<br>
+               There may only be one copy of cards on the Terraforming restricted list included in a Terraforming deck.<br>
+               These lists can be found <a href="/cards">here</a>.</p>
+        </section>
+        <section id="rule-authority">
+            <h2>Rule Authority</h2>
+            <p>If a standard-edition Magic: The Gathering rule conflicts with a Terraforming rule, the Terraforming rule takes precedence.<br>
+               If a rule is changed or added, existing decks must be changed to coincide with the current rules.<br>
+               If a rule or statement somewhere else on this website contradicts something stated on this page, the rules stated on this page take precedence.</p>
+        </section>
+    </main>
+    <script>
+        const btn = document.getElementById('menu-btn');
+        const links = document.getElementById('nav-links');
+        btn.addEventListener('click', () => {
+            const open = links.classList.toggle('open');
+            btn.setAttribute('aria-expanded', open);
+        });
+
+        (function () {
+        const bar = document.getElementById('deck-bar');
+        const spell = Math.floor(Math.random() * 60);
+        for (let i = 0; i < 60; i++) {
+            const seg = document.createElement('span');
+            if (i === spell) seg.className = 'spell';
+            bar.appendChild(seg);
+        }
+        })();
+    </script>
+</body>
+</html>
